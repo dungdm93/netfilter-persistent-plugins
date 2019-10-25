@@ -1,11 +1,11 @@
 `ipvs-persistent`
 =================
 `ipvs-persistent` is a `netfilter-persistent` plugin to auto-load IPVS rules on boot.
+> NOTE: only on Debian-based OSes like Ubuntu, Linux Mint
 
 ## 1. Installation
 * Install `ipvsadm` and `netfilter-persistent` packages
 ```bash
-# only on Debian-based OS like Ubuntu, Linux Mint
 apt install ipvsadm netfilter-persistent
 
 # enable netfilter-persistent start on boot
@@ -28,7 +28,7 @@ ipvsadm --save --numeric > /etc/ipvs/rules
 ```
 
 * **Your IPVS rules are now persisted, and automatically load on boot.**  
-If you'd like to load/reset IPVS rules:
+If you'd like to manual load/reset IPVS rules, run this command:
 ```bash
 service netfilter-persistent reload
 
