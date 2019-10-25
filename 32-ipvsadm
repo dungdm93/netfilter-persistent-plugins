@@ -1,9 +1,7 @@
 #!/bin/sh
 
-# This file is part of netfilter-persistent
-# (was iptables-persistent)
-# Copyright (C) 2009, Simon Richter <sjr@debian.org>
-# Copyright (C) 2010, 2014 Jonathan Wiltshire <jmw@debian.org>
+# This file is a plugin of netfilter-persistent package.
+# Copyright (C) 2019, Đặng Minh Dũng <dungdm93@gmail.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -16,69 +14,52 @@ rc=0
 
 load_rules()
 {
-	#load IPv4 rules
-	if [ ! -f /etc/iptables/rules.v4 ]; then
-		echo "Warning: skipping IPv4 (no rules to load)"
-	else
-		/sbin/iptables-restore < /etc/iptables/rules.v4 2> /dev/null
-		if [ $? -ne 0 ]; then
-			rc=1
-		fi
-	fi
+    if [ ! -f /etc/ipvs/rules ]; then
+        echo "Warning: skipping IPVS (no rules to load)"
+    else
+        flush_rules
+        /sbin/ipvsadm --restore < /etc/ipvs/rules 2> /dev/null
+        if [ $? -ne 0 ]; then
+            rc=1
+        fi
+    fi
 }
 
 save_rules()
 {
-	#save IPv4 rules
-	#need at least iptable_filter loaded:
-	/sbin/modprobe -q iptable_filter || true
-	if [ ! -f /proc/net/ip_tables_names ]; then
-		echo "Warning: skipping IPv4 (no modules loaded)"
-	elif [ -x /sbin/iptables-save ]; then
-		touch /etc/iptables/rules.v4
-		chmod 0640 /etc/iptables/rules.v4
-		/sbin/iptables-save > /etc/iptables/rules.v4
-		if [ $? -ne 0 ]; then
-			rc=1
-		fi
-	fi
+    if [ -x /sbin/ipvsadm ]; then
+        touch /etc/ipvs/rules
+        chmod 0640 /etc/ipvs/rules
+        /sbin/ipvsadm --save --numeric > /etc/ipvs/rules
+        if [ $? -ne 0 ]; then
+            rc=1
+        fi
+    fi
 }
 
 flush_rules()
 {
-	if [ ! -f /proc/net/ip_tables_names ]; then
-		log_action_cont_msg "Warning: skipping IPv4 (no module loaded)"
-	elif [ -x /sbin/iptables ]; then
-		for chain in INPUT FORWARD OUTPUT
-		do
-			/sbin/iptables -P $chain ACCEPT
-		done
-		for param in F Z X; do /sbin/iptables -$param; done
-		for table in $(cat /proc/net/ip_tables_names)
-		do
-			/sbin/iptables -t $table -F
-			/sbin/iptables -t $table -Z
-			/sbin/iptables -t $table -X
-		done
-	fi
+    if [ -x /sbin/ipvsadm ]; then
+        /sbin/ipvsadm --clear
+    fi
 }
 
 case "$1" in
 start|restart|reload|force-reload)
-	load_rules
-	;;
+    load_rules
+    ;;
 save)
-	save_rules
-	;;
+    save_rules
+    ;;
 stop)
-	# Why? because if stop is used, the firewall gets flushed for a variable
-	# amount of time during package upgrades, leaving the machine vulnerable
-	# It's also not always desirable to flush during purge
-	echo "Automatic flushing disabled, use \"flush\" instead of \"stop\""
-	;;
+    # Why? because if stop is used, the ipvs gets flushed for a variable
+    # amount of time during package upgrades, leaving the services downtime.
+    # It's also not always desirable to flush during purge
+    echo "Automatic flushing disabled, use \"flush\" instead of \"stop\""
+    ;;
 flush)
-	flush_rules
-	;;
+    flush_rules
+    ;;
 *)
     echo "Usage: $0 {start|restart|reload|force-reload|save|flush}" >&2
     exit 1
