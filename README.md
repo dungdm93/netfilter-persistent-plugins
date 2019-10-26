@@ -16,7 +16,7 @@
     ```bash
     mkdir -p /etc/ipvs
 
-    curl -L https://github.com/dungdm93/ipvs-persistent/raw/master/32-ipvsadm \
+    curl -L https://github.com/dungdm93/ipvs-persistent/raw/master/plugins.d/32-ipvsadm \
         -o /usr/share/netfilter-persistent/plugins.d/32-ipvsadm
     chmod +x /usr/share/netfilter-persistent/plugins.d/32-ipvsadm
     ```
