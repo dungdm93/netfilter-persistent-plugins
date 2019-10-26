@@ -1,0 +1,80 @@
+#!/bin/sh
+
+# This file is a plugin of netfilter-persistent package.
+# Copyright (C) 2019, Đặng Minh Dũng <dungdm93@gmail.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3
+# of the License, or (at your option) any later version.
+
+set -e
+
+rc=0
+RULE_FILE=/etc/ipset/rules
+
+check_ipset()
+{
+    if [ ! -e /sbin/ipset ]; then
+        echo "Error: /sbin/ipset not found" >&2
+        exit 1
+    fi
+    if [ ! -x /sbin/ipset ]; then
+        echo "Error: /sbin/ipset is not executable file" >&2
+        exit 1
+    fi
+}
+
+load_rules()
+{
+    if [ ! -f "${RULE_FILE}" ]; then
+        echo "Warning: skipping IPset (no rules to load)"
+    else
+        flush_rules
+        /sbin/ipset restore -file "${RULE_FILE}" 2> /dev/null
+        if [ $? -ne 0 ]; then
+            rc=1
+        fi
+    fi
+}
+
+save_rules()
+{
+    touch "${RULE_FILE}"
+    chmod 0640 "${RULE_FILE}"
+    /sbin/ipset save -file "${RULE_FILE}"
+    if [ $? -ne 0 ]; then
+        rc=1
+    fi
+}
+
+flush_rules()
+{
+    # flush only clear entries from sets
+    /sbin/ipset destroy
+}
+
+check_ipset
+case "$1" in
+start|restart|reload|force-reload)
+    load_rules
+    ;;
+save)
+    save_rules
+    ;;
+stop)
+    # Why? because if stop is used, the firewall gets flushed for a variable
+    # amount of time during package upgrades, leaving the machine vulnerable
+    # It's also not always desirable to flush during purge
+    echo "Automatic flushing disabled, use \"flush\" instead of \"stop\""
+    ;;
+flush)
+    flush_rules
+    ;;
+*)
+    echo "Usage: $0 {start|restart|reload|force-reload|save|flush}" >&2
+    exit 1
+    ;;
+esac
+
+exit $rc
