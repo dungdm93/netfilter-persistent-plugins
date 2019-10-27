@@ -11,14 +11,27 @@
 set -e
 
 rc=0
+RULE_FILE=/etc/ipvs/rules
+
+check_ipvsadm()
+{
+    if [ ! -e /sbin/ipvsadm ]; then
+        echo "Error: /sbin/ipvsadm not found" >&2
+        exit 1
+    fi
+    if [ ! -x /sbin/ipvsadm ]; then
+        echo "Error: /sbin/ipvsadm is not executable file" >&2
+        exit 1
+    fi
+}
 
 load_rules()
 {
-    if [ ! -f /etc/ipvs/rules ]; then
+    if [ ! -f "${RULE_FILE}" ]; then
         echo "Warning: skipping IPVS (no rules to load)"
     else
         flush_rules
-        /sbin/ipvsadm --restore < /etc/ipvs/rules 2> /dev/null
+        /sbin/ipvsadm --restore < "${RULE_FILE}" 2> /dev/null
         if [ $? -ne 0 ]; then
             rc=1
         fi
@@ -27,23 +40,20 @@ load_rules()
 
 save_rules()
 {
-    if [ -x /sbin/ipvsadm ]; then
-        touch /etc/ipvs/rules
-        chmod 0640 /etc/ipvs/rules
-        /sbin/ipvsadm --save --numeric > /etc/ipvs/rules
-        if [ $? -ne 0 ]; then
-            rc=1
-        fi
+    touch "${RULE_FILE}"
+    chmod 0640 "${RULE_FILE}"
+    /sbin/ipvsadm --save --numeric > "${RULE_FILE}"
+    if [ $? -ne 0 ]; then
+        rc=1
     fi
 }
 
 flush_rules()
 {
-    if [ -x /sbin/ipvsadm ]; then
-        /sbin/ipvsadm --clear
-    fi
+    /sbin/ipvsadm --clear
 }
 
+check_ipvsadm
 case "$1" in
 start|restart|reload|force-reload)
     load_rules
