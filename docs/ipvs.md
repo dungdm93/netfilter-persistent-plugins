@@ -1,4 +1,4 @@
-`ipvs-persistent`
+`ipvs` persistent
 =================
 
 ## 1. Installation

@@ -1,4 +1,4 @@
-`ipset-persistent`
+`ipset` persistent
 ==================
 
 ## 1. Installation
