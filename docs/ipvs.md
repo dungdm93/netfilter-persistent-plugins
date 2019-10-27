@@ -10,9 +10,9 @@
     systemctl is-enabled netfilter-persistent
     ```
 
-* Dowload `ipvs-persistent` plugin
+* Setup `ipvs` plugin
     ```bash
-    mkdir -p /etc/ipvs
+    mkdir -p /etc/ipvs/
 
     curl -L https://github.com/dungdm93/ipvs-persistent/raw/master/plugins.d/32-ipvsadm \
         -o /usr/share/netfilter-persistent/plugins.d/32-ipvsadm
